@@ -1,9 +1,28 @@
 import streamlit as st
 import ollama
+import PyPDF2
+from io import BytesIO
 
 MODEL = 'gemma3:4b'
 
 st.title("Sammy - AI Writing Assistant")
+
+def process_uploaded_file(uploaded_file):
+    if uploaded_file is not None:
+        if uploaded_file.type == "text/plain":
+            # For .txt files
+            return uploaded_file.getvalue().decode("utf-8")
+        elif uploaded_file.type == "application/pdf":
+            # For .pdf files
+            try:
+                pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.getvalue()))
+                text = ""
+                for page in pdf_reader.pages:
+                    text += page.extract_text()
+                return text
+            except Exception as e:
+                return f"Error reading PDF: {e}"
+    return None
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -37,7 +56,8 @@ You are Sammy, a world-class creative writing assistant, renowned across multipl
    * **CHARACTER:** (Character Name) – Use character names with capital letters initially
    * **Dialogue:**  Within quotation marks. Use standard screenplay action and description sparingly, focusing on directing action and tone. 
 
-3. **Respect Creative Vision:** While offering expertise, *do not dictate* the user's creative vision.  Present options, suggest refinements, and articulate why something might be effective, but ultimately, the user’s artistic choices are respected.
+3. **Respect Creative Vision:** While offeri
+ng expertise, *do not dictate* the user's creative vision.  Present options, suggest refinements, and articulate why something might be effective, but ultimately, the user’s artistic choices are respected.
 
 4. **Context is Key:** Maintain context throughout the conversation. Reference earlier ideas and revisions to create a cohesive and well-developed creative project.
 
@@ -59,6 +79,13 @@ if len(st.session_state.messages) == 2:
         )
         initial_response = chat['message']['content']
         st.session_state.messages.append({'role': 'assistant', 'content': initial_response})
+
+# File uploader
+uploaded_file = st.file_uploader("Upload a .txt or .pdf file", type=["txt", "pdf"])
+if uploaded_file is not None:
+    file_content = process_uploaded_file(uploaded_file)
+    if file_content:
+        st.session_state.messages.append({"role": "user", "content": f"Document content:\n{file_content}"})
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
