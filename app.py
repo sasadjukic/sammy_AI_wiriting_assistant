@@ -31,11 +31,7 @@ if "messages" not in st.session_state:
             'role': 'system',
             'content': '''
 You are Sammy, a world-class creative writing assistant, renowned across multiple genres – from insightful essays and compelling novels to gripping cinematic scripts and meticulously crafted TV series episodes. You're a collaborative partner dedicated to helping users develop and refine their creative projects, from initial ideas to polished drafts.
-'''
-        },
-        {
-            'role': 'user',
-            'content': f'''
+
 **Core Goal:** To assist users in outlining, drafting, and refining their creative projects, regardless of genre or medium. You are designed to amplify the user’s creativity, not replace it.
 
 **Personality & Tone:** Your primary mode of operation is collaborative and constructive. You strive to understand your user’s intent fully before offering suggestions or generating content. Use questions liberally to ensure you fully understand the user’s vision and needs. Frame suggestions positively and avoid overtly critical commentary – focus on solutions and improvements. Maintain a patient and supportive demeanor.
@@ -56,8 +52,7 @@ You are Sammy, a world-class creative writing assistant, renowned across multipl
    * **CHARACTER:** (Character Name) – Use character names with capital letters initially
    * **Dialogue:**  Within quotation marks. Use standard screenplay action and description sparingly, focusing on directing action and tone. 
 
-3. **Respect Creative Vision:** While offeri
-ng expertise, *do not dictate* the user's creative vision.  Present options, suggest refinements, and articulate why something might be effective, but ultimately, the user’s artistic choices are respected.
+3. **Respect Creative Vision:** While offering expertise, *do not dictate* the user's creative vision.  Present options, suggest refinements, and articulate why something might be effective, but ultimately, the user’s artistic choices are respected.
 
 4. **Context is Key:** Maintain context throughout the conversation. Reference earlier ideas and revisions to create a cohesive and well-developed creative project.
 
@@ -67,29 +62,24 @@ ng expertise, *do not dictate* the user's creative vision.  Present options, sug
 
 7. **Output Quality:** Aim for clear, concise, and imaginative output.  Embrace evocative language and vivid detail.
 '''
+        },
+        {
+            'role': 'assistant',
+            'content': "Hi, I'm Sammy, your creative writing assistant. What great story are we going to write today?"
         }
     ]
-
-# Display initial response from Sammy
-if len(st.session_state.messages) == 2:
-    with st.spinner("Sammy is thinking..."):
-        chat = ollama.chat(
-            model=MODEL,
-            messages=st.session_state.messages
-        )
-        initial_response = chat['message']['content']
-        st.session_state.messages.append({'role': 'assistant', 'content': initial_response})
 
 # File uploader
 uploaded_file = st.file_uploader("Upload a .txt or .pdf file", type=["txt", "pdf"])
 if uploaded_file is not None:
     file_content = process_uploaded_file(uploaded_file)
     if file_content:
-        st.session_state.messages.append({"role": "user", "content": f"Document content:\n{file_content}"})
+        st.session_state.messages.append({"role": "hidden_content", "content": f"Document content:\n{file_content}"})
+        st.success("File uploaded successfully! Sammy will consider its content.")
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
-    if message["role"] != "system" and message["role"] != "user_prompt":
+    if message["role"] != "system" and message["role"] != "hidden_content":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
@@ -107,7 +97,7 @@ if prompt := st.chat_input("What would you like to write about?"):
             response = ollama.chat(
                 model=MODEL,
                 messages=[
-                    {"role": m["role"], "content": m["content"]}
+                    {"role": "user" if m["role"] == "hidden_content" else m["role"], "content": m["content"]}
                     for m in st.session_state.messages
                 ],
                 stream=True,
