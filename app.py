@@ -2,6 +2,7 @@ import streamlit as st
 import ollama
 import PyPDF2
 from io import BytesIO
+from PIL import Image
 from system_prompt import SYSTEM_PROMPT
 from styles import CUSTOM_CSS
 
@@ -40,7 +41,8 @@ def initialize_session_state():
 def display_chat_history():
     for message in st.session_state.messages:
         if message["role"] != "system" and message["role"] != "hidden_content":
-            with st.chat_message(message["role"]):
+            avatar = "Sammy.png" if message["role"] == "assistant" else None
+            with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
 
 def handle_user_input():
@@ -52,7 +54,7 @@ def handle_user_input():
             st.markdown(prompt)
 
         # Display assistant response in chat message container
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="Sammy.png"):
             with st.spinner("Sammy is thinking..."):
                 response = ollama.chat(
                     model=MODEL,
@@ -71,7 +73,11 @@ def handle_user_input():
         st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 def main():
-    st.title("Sammy - AI Writing Assistant")
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        st.image("Sammy.png", width=100)
+    with col2:
+        st.title("Sammy - Creative Writing Assistant")
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
     initialize_session_state()
